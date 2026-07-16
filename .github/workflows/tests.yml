@@ -28,7 +28,7 @@ jobs:
 
     - name: Run tests
       env:
-        LIVEKIT_URL: ${{ secrets.LIVEKIT_URL }}
-        LIVEKIT_API_KEY: ${{ secrets.LIVEKIT_API_KEY }}
-        LIVEKIT_API_SECRET: ${{ secrets.LIVEKIT_API_SECRET }}
+        LIVEKIT_URL: "wss://fake-url-for-testing.com"
+        LIVEKIT_API_KEY: "fake-key-for-testing"
+        LIVEKIT_API_SECRET: "fake-secret-for-testing"
       run: uv run pytest -v
