@@ -1,7 +1,11 @@
+import asyncio
+import datetime
 import logging
 import textwrap
 
 from dotenv import load_dotenv
+from google.oauth2.service_account import Credentials
+from googleapiclient.discovery import build
 from livekit.agents import (
     Agent,
     AgentServer,
@@ -9,34 +13,24 @@ from livekit.agents import (
     JobContext,
     TurnHandlingOptions,
     cli,
+    function_tool,
     inference,
-    room_io,
 )
-import datetime
-from livekit.plugins import ai_coustics
-from livekit.plugins import groq
-from livekit.plugins import openai
-from livekit.plugins import silero
-from livekit.agents import Agent, function_tool, llm 
-import asyncio
-from google.oauth2.service_account import Credentials
-from googleapiclient.discovery import build
-
+from livekit.plugins import groq, silero
 
 logger = logging.getLogger("agent")
 
 load_dotenv(".env.local")
 # dynamic real-time date and time
 now_pakistan = datetime.datetime.now()
-current_date_context =  {now_pakistan.strftime('%A, %B %d, %Y')}
-current_time_context =  {now_pakistan.strftime('%I:%M %p')}
+current_date_context = {now_pakistan.strftime("%A, %B %d, %Y")}
+current_time_context = {now_pakistan.strftime("%I:%M %p")}
+
 
 class DentalAssistant(Agent):
     def __init__(self) -> None:
         super().__init__(
-            
             llm=groq.LLM(model="llama-3.1-8b-instant", temperature=0.4),
-            
             instructions=textwrap.dedent(
                 f"""
                 You are a friendly, reliable Dental Clinic Appointment Booking voice assistant that help user book an appointment with dentist, and completes tasks with 
@@ -122,7 +116,7 @@ class DentalAssistant(Agent):
             ),
         )
 
-# Tool definition for Google Calendar Integration (Fixed Missing Variables)
+    # Tool definition for Google Calendar Integration (Fixed Missing Variables)
     @function_tool()
     async def create_calendar_appointment(
         self,
@@ -131,93 +125,98 @@ class DentalAssistant(Agent):
         service: str,
         appointment_date: str,
         doctor_appointed: str,
-        appointment_time: str
+        appointment_time: str,
     ) -> str:
         """This tool books an appointment in the dental clinic calendar once you have name, contact, service, appointment_date,
         appointment_time and doctor_appointed.
         """
-        print(f"\n--- [Google Calendar Tool Triggered] ---")
+        print("\n--- [Google Calendar Tool Triggered] ---")
         print(f"Patient Name: {name}")
         print(f"Phone: {contact}")
         print(f"Service: {service}")
         print(f"Date: {appointment_date}")
         print(f"Time: {appointment_time}")
         print(f"Doctor: {doctor_appointed}")
-        print(f"----------------------------------------\n")
-    
+        print("----------------------------------------\n")
+
         try:
-            SCOPES = ['https://www.googleapis.com/auth/calendar']
-            creds = Credentials.from_service_account_file('google-credentials.json', scopes=SCOPES)
-            calendar_service = build('calendar', 'v3', credentials=creds)
+            SCOPES = ["https://www.googleapis.com/auth/calendar"]
+            creds = Credentials.from_service_account_file(
+                "google-credentials.json", scopes=SCOPES
+            )
+            calendar_service = build("calendar", "v3", credentials=creds)
 
             # 1. Clean and parse dates safely
             time_str = f"{appointment_date} {appointment_time}".strip()
-        
+
             if any(x in time_str.upper() for x in ["AM", "PM"]):
-                start_datetime = datetime.datetime.strptime(time_str, "%Y-%m-%d %I:%M %p")
+                start_datetime = datetime.datetime.strptime(
+                    time_str, "%Y-%m-%d %I:%M %p"
+                )
             else:
                 start_datetime = datetime.datetime.strptime(time_str, "%Y-%m-%d %H:%M")
-        
+
             end_datetime = start_datetime + datetime.timedelta(minutes=30)
 
             start_iso = start_datetime.strftime("%Y-%m-%dT%H:%M:%S+05:00")
             end_iso = end_datetime.strftime("%Y-%m-%dT%H:%M:%S+05:00")
 
             event_body = {
-                'summary': f"DentalBuddy: {name} ({service})",
-                'description': f"Contact: {contact}\nDoctor Appointed: {doctor_appointed}\nService: {service}",
-                'start': {
-                    'dateTime': start_iso,
-                    'timeZone': 'Asia/Karachi',
+                "summary": f"DentalBuddy: {name} ({service})",
+                "description": f"Contact: {contact}\nDoctor Appointed: {doctor_appointed}\nService: {service}",
+                "start": {
+                    "dateTime": start_iso,
+                    "timeZone": "Asia/Karachi",
                 },
-                'end': {
-                    'dateTime': end_iso,
-                    'timeZone': 'Asia/Karachi',
-                }
+                "end": {
+                    "dateTime": end_iso,
+                    "timeZone": "Asia/Karachi",
+                },
             }
 
             # 🚀 Non-blocking Thread Execution
             def _execute_insert():
-                return calendar_service.events().insert(
-                    calendarId='aizazkhan7874@gmail.com', 
-                    body=event_body
-                ).execute()
+                return (
+                    calendar_service.events()
+                    .insert(calendarId="aizazkhan7874@gmail.com", body=event_body)
+                    .execute()
+                )
 
             created_event = await asyncio.to_thread(_execute_insert)
-        
-            event_id = created_event.get('id')
+
+            event_id = created_event.get("id")
             print(f" [Success] Event created! Google ID: {event_id}")
-        
+
             return f"Success: Appointment successfully booked for {name} on {appointment_date} at {appointment_time} with {doctor_appointed}."
 
         except Exception as e:
-            print(f"[Google Calendar Error]: {str(e)}")
-            return f"Error: Could not schedule the appointment on Google Calendar due to an integration issue."
+            print(f"[Google Calendar Error]: {e!s}")
+            return "Error: Could not schedule the appointment on Google Calendar due to an integration issue."
+
 
 server = AgentServer()
 
-@server.rtc_session(agent_name = "DentalBuddy")
+
+@server.rtc_session(agent_name="DentalBuddy")
 async def my_clinic_agent(ctx: JobContext):
     ctx.log_context_fields = {"room": ctx.room.name}
 
-
-    
-
     session = AgentSession(
-        stt = inference.STT(model ="deepgram/nova-2", language="en-US"),
-        tts = inference.TTS(model="elevenlabs", voice = "21m00Tcm4TlvDq8ikWAM"),
+        stt=inference.STT(model="deepgram/nova-2", language="en-US"),
+        tts=inference.TTS(model="elevenlabs", voice="21m00Tcm4TlvDq8ikWAM"),
         vad=silero.VAD.load(
-            min_silence_duration= 0.25,
-            min_speech_duration= 0.05,
-            activation_threshold=0.5
+            min_silence_duration=0.25,
+            min_speech_duration=0.05,
+            activation_threshold=0.5,
         ),
-        turn_handling= TurnHandlingOptions(),
-        preemptive_generation = True,
+        turn_handling=TurnHandlingOptions(),
+        preemptive_generation=True,
     )
 
     agent = DentalAssistant()
     await session.start(agent=agent, room=ctx.room)
     await ctx.connect()
+
 
 if __name__ == "__main__":
     cli.run_app(server)
