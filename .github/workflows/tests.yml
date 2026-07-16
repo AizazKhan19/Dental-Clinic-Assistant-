@@ -31,4 +31,5 @@ jobs:
         LIVEKIT_URL: "wss://fake-url-for-testing.com"
         LIVEKIT_API_KEY: "fake-key-for-testing"
         LIVEKIT_API_SECRET: "fake-secret-for-testing"
+        GROQ_API_KEY: "fake-key-for-testing"
       run: uv run pytest -v
