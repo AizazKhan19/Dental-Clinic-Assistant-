@@ -2,147 +2,200 @@
   <img src="./.github/assets/livekit-mark.png" alt="LiveKit logo" width="100" height="100">
 </a>
 
-# LiveKit Agents Starter - Python
+# Dental Clinic Assistant - Voice AI Agent
 
-A complete starter project for building voice AI apps with [LiveKit Agents for Python](https://github.com/livekit/agents) and [LiveKit Cloud](https://cloud.livekit.io/).
+A voice-enabled AI assistant for managing dental clinic appointments, built with [LiveKit Agents](https://github.com/livekit/agents) and [LiveKit Cloud](https://cloud.livekit.io/).
 
-The starter project includes:
+## Overview
 
-- A simple voice AI assistant, ready for extension and customization
-- A voice AI pipeline built on [LiveKit Inference](https://docs.livekit.io/agents/models/inference)
-  with [models](https://docs.livekit.io/agents/models) from OpenAI, Cartesia, and Deepgram. More than 50 other model providers are supported, including [Realtime models](https://docs.livekit.io/agents/models/realtime)
-- Eval suite based on the LiveKit Agents [testing & evaluation framework](https://docs.livekit.io/agents/start/testing/)
-- [LiveKit Turn Detector](https://docs.livekit.io/agents/logic/turns/turn-detector/), an end-of-turn model that listens to the user's audio directly, combining semantic understanding with acoustic cues for state-of-the-art accuracy across 14 languages
-- [Background voice cancellation](https://docs.livekit.io/transport/media/noise-cancellation/)
-- Deep session insights from LiveKit [Agent Observability](https://docs.livekit.io/deploy/observability/)
-- A Dockerfile ready for [production deployment to LiveKit Cloud](https://docs.livekit.io/deploy/agents/)
+This project is a conversational voice AI agent that helps patients book dental appointments at DentalBuddy clinic. The assistant handles the complete appointment booking workflow through natural conversation, collecting patient information, service preferences, and scheduling consultations.
 
-This starter app is compatible with any [custom web/mobile frontend](https://docs.livekit.io/frontends/) or [telephony](https://docs.livekit.io/telephony/).
+## Features
 
-## Using coding agents
+- **Voice-First Interface**: Natural conversation over voice for appointment scheduling
+- **Intelligent Conversation Flow**: 
+  - Collects patient name and contact information
+  - Gathers appointment type (service or consultation)
+  - Handles doctor preference (male or female)
+  - Validates appointment dates (no weekends/past dates)
+  - Confirms availability and pricing
+- **Calendar Integration**: Automatically creates calendar events for confirmed appointments
+- **Real-Time Context Awareness**: Uses current date and time to prevent booking for past dates
+- **Multiple AI Features**:
+  - Background noise cancellation for clear audio
+  - Turn detection for natural conversation flow
+  - Large language model (Groq's Llama 3.1) for intelligent responses
+  - Multiple voice provider support
 
-This project is designed to work with coding agents like [Claude Code](https://claude.com/product/claude-code), [Cursor](https://www.cursor.com/), and [Codex](https://openai.com/codex/).
+## What It Does
 
-For your convenience, LiveKit offers both a CLI and an [MCP server](https://docs.livekit.io/reference/developer-tools/docs-mcp/) that can be used to browse and search its documentation. The [LiveKit CLI](https://docs.livekit.io/intro/basics/cli/) (`lk docs`) works with any coding agent that can run shell commands. Install it for your platform:
+The assistant provides information about:
+- **Available Services**: Teeth scaling, whitening, braces, cavity filling, teeth replacement
+- **Pricing**: Service costs and consultation charges
+- **Doctor Availability**: Male and female dentists at the clinic
+- **Clinic Hours**: Monday-Friday, 8:00 AM to 6:00 PM
+- **Appointment Booking**: Full workflow to schedule and confirm appointments
 
-**macOS:**
+## Project Structure
 
-```console
-brew install livekit-cli
+```
+src/
+├── agent.py              # Main agent implementation
+└── __init__.py
+
+tests/
+└── test_agent.py         # Test suite
+
+Dockerfile               # Production deployment configuration
+pyproject.toml          # Project dependencies and configuration
 ```
 
-**Linux:**
+The main agent code is in [src/agent.py](src/agent.py), which contains the DentalAssistant class with:
+- LLM configuration (Groq Llama 3.1 8B)
+- Detailed system instructions for appointment booking
+- Tool definitions for calendar integration
+- Conversation management
 
-```console
-curl -sSL https://get.livekit.io/cli | bash
-```
+## Getting Started
 
-**Windows:**
+### Prerequisites
 
-```console
-winget install LiveKit.LiveKitCLI
-```
+- Python 3.10 or higher
+- `uv` package manager ([installation guide](https://docs.astral.sh/uv/getting-started/installation/))
+- LiveKit Cloud account (free tier available at [cloud.livekit.io](https://cloud.livekit.io/))
 
-The `lk docs` subcommand requires version 2.15.0 or higher. Check your version with `lk --version` and update if needed. Once installed, your coding agent can search and browse LiveKit documentation directly from the terminal:
+### Installation
 
-```console
-lk docs search "voice agents"
-lk docs get-page /agents/start/voice-ai-quickstart
-```
+1. **Clone the repository:**
+   ```bash
+   git clone <repository-url>
+   cd my-voice-agent
+   ```
 
-See the [Using coding agents](https://docs.livekit.io/intro/coding-agents/) guide for more details, including MCP server setup.
+2. **Install dependencies:**
+   ```bash
+   uv sync
+   ```
 
-The project includes a complete [AGENTS.md](AGENTS.md) file for these assistants. You can modify this file to suit your needs. To learn more about this file, see [https://agents.md](https://agents.md).
+3. **Set up environment variables:**
+   ```bash
+   cp .env.example .env.local
+   ```
+   Fill in the required LiveKit credentials:
+   - `LIVEKIT_URL` - Your LiveKit server URL
+   - `LIVEKIT_API_KEY` - API key for authentication
+   - `LIVEKIT_API_SECRET` - API secret for authentication
 
-## Dev Setup
+   (Obtain these from your LiveKit Cloud dashboard or use the CLI: `lk cloud auth && lk app env --write --destination .env.local`)
 
-Create a project from this template with the LiveKit CLI (recommended):
+## Running the Agent
+
+### Interactive Console Mode
+Start a direct conversation with the agent:
 
 ```bash
-lk cloud auth
-lk agent init my-agent --template agent-starter-python
-```
-
-The CLI clones the template and configures your environment. Then follow the rest of this guide from [Run the agent](#run-the-agent).
-
-<details>
-<summary>Alternative: Manual setup without the CLI</summary>
-
-Clone the repository and install dependencies to a virtual environment:
-
-```console
-cd agent-starter-python
-uv sync
-```
-
-Sign up for [LiveKit Cloud](https://cloud.livekit.io/) then set up the environment by copying `.env.example` to `.env.local` and filling in the required keys:
-
-- `LIVEKIT_URL`
-- `LIVEKIT_API_KEY`
-- `LIVEKIT_API_SECRET`
-
-You can load the LiveKit environment automatically using the [LiveKit CLI](https://docs.livekit.io/intro/basics/cli/):
-
-```bash
-lk cloud auth
-lk app env --write --destination .env.local
-```
-
-</details>
-
-## Run the agent
-
-Run this command to speak to your agent directly in your terminal:
-
-```console
 uv run python src/agent.py console
 ```
 
-To run the agent for use with a frontend or telephony, use the `dev` command:
+This launches an interactive terminal session where you can type messages and speak with the agent.
 
-```console
-uv run python src/agent.py dev
+### Production Deployment
+The Dockerfile is configured for deployment to LiveKit Cloud:
+
+```bash
+lk agent build . -image <image-name>
+lk agent deploy -image <image-name>
 ```
 
-In production, use the `start` command:
+## Development
 
-```console
-uv run python src/agent.py start
+### Code Formatting
+Maintain code quality using Ruff:
+
+```bash
+# Format code
+uv run ruff format
+
+# Check for issues
+uv run ruff check
 ```
 
-## Frontend & Telephony
+### Testing
+Run the test suite:
 
-Get started quickly with our pre-built frontend starter apps, or add telephony support:
-
-| Platform | Link | Description |
-|----------|----------|-------------|
-| **Web** | [`livekit-examples/agent-starter-react`](https://github.com/livekit-examples/agent-starter-react) | Web voice AI assistant with React & Next.js |
-| **iOS/macOS** | [`livekit-examples/agent-starter-swift`](https://github.com/livekit-examples/agent-starter-swift) | Native iOS, macOS, and visionOS voice AI assistant |
-| **Flutter** | [`livekit-examples/agent-starter-flutter`](https://github.com/livekit-examples/agent-starter-flutter) | Cross-platform voice AI assistant app |
-| **React Native** | [`livekit-examples/voice-assistant-react-native`](https://github.com/livekit-examples/voice-assistant-react-native) | Native mobile app with React Native & Expo |
-| **Android** | [`livekit-examples/agent-starter-android`](https://github.com/livekit-examples/agent-starter-android) | Native Android app with Kotlin & Jetpack Compose |
-| **Web Embed** | [`livekit-examples/agent-starter-embed`](https://github.com/livekit-examples/agent-starter-embed) | Voice AI widget for any website |
-| **Telephony** | [Documentation](https://docs.livekit.io/telephony/) | Add inbound or outbound calling to your agent |
-
-For advanced customization, see the [complete frontend guide](https://docs.livekit.io/frontends/).
-
-## Tests and evals
-
-This project includes a complete suite of evals, based on the LiveKit Agents [testing & evaluation framework](https://docs.livekit.io/agents/start/testing/). To run them, use `pytest`.
-
-```console
+```bash
 uv run pytest
 ```
 
-## Using this template repo for your own project
+Tests are located in the [tests/](tests/) directory.
 
-Once you've started your own project based on this repo, you should:
+## How It Works
 
-1. **Check in your `uv.lock`**: This file is currently untracked for the template, but you should commit it to your repository for reproducible builds and proper configuration management. (The same applies to `livekit.toml`, if you run your agents in LiveKit Cloud)
+### Conversation Flow
 
-2. **Remove the git tracking test**: Delete the "Check files not tracked in git" step from `.github/workflows/tests.yml` since you'll now want this file to be tracked. These are just there for development purposes in the template repo itself.
+1. **Greeting**: The assistant introduces itself as DentalBuddy scheduling assistant
+2. **Information Collection**: Gathers patient name and contact information
+3. **Appointment Type**: Asks whether the patient needs a service or consultation
+4. **Details**: 
+   - For services: Asks which service is needed
+   - For consultations: Asks for desired duration
+5. **Doctor Preference**: Inquires if patient prefers a male or female dentist
+6. **Date Selection**: Helps the patient select an available date/time
+7. **Confirmation**: Displays appointment details and pricing
+8. **Calendar Booking**: Automatically creates the appointment in the calendar
 
-3. **Add your own repository secrets**: You must [add secrets](https://docs.github.com/en/actions/how-tos/writing-workflows/choosing-what-your-workflow-does/using-secrets-in-github-actions) for `LIVEKIT_URL`, `LIVEKIT_API_KEY`, and `LIVEKIT_API_SECRET` so that the tests can run in CI.
+### Key Features
+
+- **Validation**: Prevents booking for past dates or clinic closed days (weekends)
+- **Real-Time Context**: Uses current date/time to validate appointment scheduling
+- **Doctor Assignment**: Automatically assigns available doctors based on preference
+- **Pricing**: Provides transparent pricing for all services and consultations
+- **Error Handling**: Gracefully handles unclear inputs and re-prompts for clarification
+
+
+## Technology Stack
+
+- **Framework**: [LiveKit Agents SDK](https://github.com/livekit/agents) - Python SDK for building voice AI agents
+- **LLM**: Groq's Llama 3.1 8B Instant model for intelligent conversation
+- **Audio Processing**: 
+  - Silero for voice activity detection
+  - AI Coustics for noise cancellation
+  - OpenAI for voice encoding/decoding
+- **Integration**: Google Calendar API for appointment scheduling
+- **Package Manager**: `uv` for fast, reliable Python dependency management
+
+## Deployment
+
+### Docker Deployment
+Build and deploy with Docker:
+
+```bash
+docker build -t my-dental-assistant .
+docker run -e LIVEKIT_URL=... -e LIVEKIT_API_KEY=... -e LIVEKIT_API_SECRET=... my-dental-assistant
+```
+
+### LiveKit Cloud
+Deploy directly to LiveKit Cloud:
+
+```bash
+lk agent deploy
+```
+
+See [LiveKit Agents Deployment Documentation](https://docs.livekit.io/deploy/agents/) for more details.
+
+## Documentation
+
+For detailed information on extending and customizing this agent, refer to:
+- [Agent Configuration Guide](AGENTS.md) - Project-specific configuration guidance
+- [LiveKit Agents Documentation](https://docs.livekit.io/agents/)
+- [LiveKit CLI Documentation](https://docs.livekit.io/intro/basics/cli/)
+
+## Support & Resources
+
+- **LiveKit Docs**: https://docs.livekit.io
+- **GitHub Issues**: Report bugs or request features
+- **LiveKit Community**: Join the [LiveKit Slack](https://livekit.io/join-slack) for community support
+
 
 ## Deploying to production
 
@@ -152,6 +205,3 @@ This project is production-ready and includes a working `Dockerfile`. To deploy 
 
 You can also self-host LiveKit instead of using LiveKit Cloud. See the [self-hosting](https://docs.livekit.io/transport/self-hosting/local/) guide for more information. If you choose to self-host, you'll need to also use [model plugins](https://docs.livekit.io/agents/models/#plugins) instead of LiveKit Inference and will need to remove the [LiveKit Cloud noise cancellation](https://docs.livekit.io/transport/media/noise-cancellation/) plugin.
 
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
